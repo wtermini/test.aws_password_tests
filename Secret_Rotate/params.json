@@ -1,0 +1,6 @@
+[
+    {
+      "ParameterKey": "ResourcePrefix",
+      "ParameterValue": "test-prefix"
+    }
+  ]

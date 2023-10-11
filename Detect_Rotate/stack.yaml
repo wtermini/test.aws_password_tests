@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CFN Template to trigger an SNS topic when a specific secret's value is changed in Secrets Manager and notify an email.
+
+Parameters:
+  secretId:
+    Description: The ARN of the secret in Secrets Manager
+    Type: String
+  EmailAddress:
+    Description: The email address to be notified
+    Type: String
+
+Resources:
+  PasswordChangeSNSTopic:
+    Type: "AWS::SNS::Topic"
+    Properties: 
+      DisplayName: "Password Change Alert"
+      TopicName: "PasswordChangeAlert"
+
+  PasswordChangeSNSEmailSubscription:
+    Type: "AWS::SNS::Subscription"
+    Properties: 
+      Protocol: "email"
+      Endpoint: !Ref EmailAddress
+      TopicArn: !Ref PasswordChangeSNSTopic
+
+  SecretChangeCloudWatchEvent:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: 'Event rule for Secrets Manager secret changes'
+      EventPattern:
+        source:
+          - "aws.secretsmanager"
+        detail-type:
+          - "AWS API Call via CloudTrail"
+        detail:
+          eventName:
+            - "PutSecretValue"
+          requestParameters:
+            secretId:
+              - !Ref secretId
+      State: "ENABLED"
+      Targets:
+        -
+          Arn: !Ref PasswordChangeSNSTopic
+          Id: "SecretChangeTarget"
+
+  SnsTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      PolicyDocument:
+        Id: 'EventBridgePublish'
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'events.amazonaws.com'
+          Action: 'sns:Publish'
+          Resource: !Ref PasswordChangeSNSTopic
+      Topics: 
+      - !Ref PasswordChangeSNSTopic
+
+Outputs:
+  SnsTopicArn:
+    Description: "SNS Topic ARN for password change alerts"
+    Value: !Ref PasswordChangeSNSTopic

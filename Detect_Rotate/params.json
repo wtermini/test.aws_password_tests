@@ -1,0 +1,6 @@
+{
+  "Parameters": {
+    "secretId": "test-prefixRotatingSecret",
+    "EmailAddress": "XYZ@gmail.com"
+  }
+}
